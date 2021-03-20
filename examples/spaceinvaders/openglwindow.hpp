@@ -21,6 +21,7 @@ class OpenGLWindow : public abcg::OpenGLWindow {
   void terminateGL() override;
 
  private:
+  GLuint m_starsProgram{};
   GLuint m_objectsProgram{};
 
   int m_viewportWidth{};
@@ -28,13 +29,19 @@ class OpenGLWindow : public abcg::OpenGLWindow {
 
   GameData m_gameData;
 
+  Asteroids m_asteroids;
+  Bullets m_bullets;
   Ship m_ship;
+  StarLayers m_starLayers;
 
   abcg::ElapsedTimer m_restartWaitTimer;
 
   ImFont* m_font{};
 
   std::default_random_engine m_randomEngine;
+
+  void checkCollisions();
+  void checkWinCondition();
 
   void restart();
   void update();

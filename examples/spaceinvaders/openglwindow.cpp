@@ -9,8 +9,6 @@ void OpenGLWindow::handleEvent(SDL_Event &event) {
   if (event.type == SDL_KEYDOWN) {
     if (event.key.keysym.sym == SDLK_SPACE)
       m_gameData.m_input.set(static_cast<size_t>(Input::Fire));
-    if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
-      m_gameData.m_input.set(static_cast<size_t>(Input::Up));
     if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
       m_gameData.m_input.set(static_cast<size_t>(Input::Down));
     if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
@@ -21,8 +19,6 @@ void OpenGLWindow::handleEvent(SDL_Event &event) {
   if (event.type == SDL_KEYUP) {
     if (event.key.keysym.sym == SDLK_SPACE)
       m_gameData.m_input.reset(static_cast<size_t>(Input::Fire));
-    if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
-      m_gameData.m_input.reset(static_cast<size_t>(Input::Up));
     if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
       m_gameData.m_input.reset(static_cast<size_t>(Input::Down));
     if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
@@ -58,12 +54,15 @@ void OpenGLWindow::handleEvent(SDL_Event &event) {
 void OpenGLWindow::initializeGL() {
   // Load a new font
   ImGuiIO &io{ImGui::GetIO()};
-  auto filename{getAssetsPath() + "Inconsolata-Medium.ttf"};
+  auto filename{getAssetsPath() + "arial.ttf"};
   m_font = io.Fonts->AddFontFromFileTTF(filename.c_str(), 60.0f);
   if (m_font == nullptr) {
     throw abcg::Exception{abcg::Exception::Runtime("Cannot load font file")};
   }
 
+  // Create program to render the stars
+  m_starsProgram = createProgramFromFile(getAssetsPath() + "stars.vert",
+                                         getAssetsPath() + "stars.frag");
   // Create program to render the other objects
   m_objectsProgram = createProgramFromFile(getAssetsPath() + "objects.vert",
                                            getAssetsPath() + "objects.frag");
@@ -84,7 +83,10 @@ void OpenGLWindow::initializeGL() {
 void OpenGLWindow::restart() {
   m_gameData.m_state = State::Playing;
 
+  m_starLayers.initializeGL(m_starsProgram, 25);
   m_ship.initializeGL(m_objectsProgram);
+  m_asteroids.initializeGL(m_objectsProgram, 3);
+  m_bullets.initializeGL(m_objectsProgram);
 }
 
 void OpenGLWindow::update() {
@@ -98,6 +100,14 @@ void OpenGLWindow::update() {
   }
 
   m_ship.update(m_gameData, deltaTime);
+  m_starLayers.update(m_ship, deltaTime);
+  m_asteroids.update(m_ship, deltaTime);
+  m_bullets.update(m_ship, m_gameData, deltaTime);
+
+  if (m_gameData.m_state == State::Playing) {
+    checkCollisions();
+    checkWinCondition();
+  }
 }
 
 void OpenGLWindow::paintGL() {
@@ -106,6 +116,9 @@ void OpenGLWindow::paintGL() {
   glClear(GL_COLOR_BUFFER_BIT);
   glViewport(0, 0, m_viewportWidth, m_viewportHeight);
 
+  m_starLayers.paintGL();
+  m_asteroids.paintGL();
+  m_bullets.paintGL();
   m_ship.paintGL(m_gameData);
 }
 
@@ -143,8 +156,68 @@ void OpenGLWindow::resizeGL(int width, int height) {
 }
 
 void OpenGLWindow::terminateGL() {
+  glDeleteProgram(m_starsProgram);
   glDeleteProgram(m_objectsProgram);
 
+  m_asteroids.terminateGL();
+  m_bullets.terminateGL();
   m_ship.terminateGL();
+  m_starLayers.terminateGL();
 }
 
+void OpenGLWindow::checkCollisions() {
+  // Check collision between ship and asteroids
+  for (auto &asteroid : m_asteroids.m_asteroids) {
+    auto asteroidTranslation{asteroid.m_translation};
+    auto distance{glm::distance(m_ship.m_translation, asteroidTranslation)};
+
+    if (distance < m_ship.m_scale * 0.9f + asteroid.m_scale * 0.85f) {
+      m_gameData.m_state = State::GameOver;
+      m_restartWaitTimer.restart();
+    }
+  }
+
+  // Check collision between bullets and asteroids
+  for (auto &bullet : m_bullets.m_bullets) {
+    if (bullet.m_dead) continue;
+
+    for (auto &asteroid : m_asteroids.m_asteroids) {
+      for (auto i : {-2, 0, 2}) {
+        for (auto j : {-2, 0, 2}) {
+          auto asteroidTranslation{asteroid.m_translation + glm::vec2(i, j)};
+          auto distance{
+              glm::distance(bullet.m_translation, asteroidTranslation)};
+
+          if (distance < m_bullets.m_scale + asteroid.m_scale * 0.85f) {
+            asteroid.m_hit = true;
+            bullet.m_dead = true;
+          }
+        }
+      }
+    }
+
+    // Break asteroids marked as hit
+    for (auto &asteroid : m_asteroids.m_asteroids) {
+      if (asteroid.m_hit && asteroid.m_scale > 0.10f) {
+        std::uniform_real_distribution<float> m_randomDist{-1.0f, 1.0f};
+        std::generate_n(std::back_inserter(m_asteroids.m_asteroids), 3, [&]() {
+          glm::vec2 offset{m_randomDist(m_randomEngine),
+                           m_randomDist(m_randomEngine)};
+          return m_asteroids.createAsteroid(
+              asteroid.m_translation + offset * asteroid.m_scale * 0.5f,
+              asteroid.m_scale * 0.5f);
+        });
+      }
+    }
+
+    m_asteroids.m_asteroids.remove_if(
+        [](const Asteroids::Asteroid &a) { return a.m_hit; });
+  }
+}
+
+void OpenGLWindow::checkWinCondition() {
+  if (m_asteroids.m_asteroids.empty()) {
+    m_gameData.m_state = State::Win;
+    m_restartWaitTimer.restart();
+  }
+}
