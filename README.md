@@ -1,11 +1,15 @@
-# ABCg
+## Authors
 
-Development framework accompanying the course [MCTA008-17 Computer Graphics](http://professor.ufabc.edu.br/~harlen.batagelo/cg/) at [UFABC](https://www.ufabc.edu.br/).
+Gabriel Silvestre Mancini
+Henrique Jotten Mendonca de Souza
 
-## Author
+## Description
 
-Harlen Batagelo
+Jogo 2D xxxxxxxxx
 
-## License
+## Infos
 
-MIT
+Foi utilizado o material em aula de Computacao grafica dada pelo 
+professor Harlen Costa Batangelo e as bibliografias, 
+alem de material obtido online atraves de pesquisa, 
+conforme a necessidade.
