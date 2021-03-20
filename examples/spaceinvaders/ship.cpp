@@ -33,15 +33,6 @@ void Ship::initializeGL(GLuint program) {
       glm::vec2{+09.5f, +10.5f}, glm::vec2{+09.5f, +04.0f},
       glm::vec2{+12.5f, +04.0f}, glm::vec2{+12.5f, +10.5f},
       
-      // Thruster trail (left)
-      glm::vec2{-12.0f, -07.5f}, 
-      glm::vec2{-09.5f, -18.0f}, 
-      glm::vec2{-07.0f, -07.5f},
-
-      // Thruster trail (right)
-      glm::vec2{+07.0f, -07.5f}, 
-      glm::vec2{+09.5f, -18.0f}, 
-      glm::vec2{+12.0f, -07.5f},
       };
 
   // Normalize
@@ -61,10 +52,7 @@ void Ship::initializeGL(GLuint program) {
                      10, 11, 12,
                      10, 12, 13,
                      14, 15, 16,
-                     14, 16, 17,
-                     // Thruster trails
-                     18, 19, 20,
-                     21, 22, 23};
+                     14, 16, 17};
   // clang-format on
 
   // Generate VBO
