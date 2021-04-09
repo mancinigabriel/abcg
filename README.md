@@ -5,7 +5,7 @@ Henrique Jotten Mendonca de Souza
 
 ## Description
 
-Jogo 2D xxxxxxxxx
+Aplicacao 3D
 
 ## Infos
 
