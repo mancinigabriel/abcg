@@ -5,7 +5,7 @@ Henrique Jotten Mendonca de Souza
 
 ## Description
 
-Aplicacao 3D
+Aplicacao 3D interativa
 
 ## Infos
 
