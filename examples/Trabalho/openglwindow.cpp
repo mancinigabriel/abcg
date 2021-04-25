@@ -49,7 +49,7 @@ void OpenGLWindow::initializeGL() {
   }
 
   // Load default model
-  loadModel(getAssetsPath() + "bunny.obj");
+  loadModel(getAssetsPath() + "Skull.obj");
 
   // Load cubemap
   m_model.loadCubeTexture(getAssetsPath() + "maps/cube/");
